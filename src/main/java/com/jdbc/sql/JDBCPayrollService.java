@@ -1,14 +1,13 @@
 package com.jdbc.sql;
 
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Enumeration;
-
-import com.mysql.cj.jdbc.Driver;
-import com.mysql.cj.xdevapi.Statement;
 
 public class JDBCPayrollService {
 	static Connection connection = null;
@@ -28,7 +27,7 @@ public class JDBCPayrollService {
 
 	// listing drivers
 	private static void listDrivers() {
-		Enumeration<java.sql.Driver> driverList = DriverManager.getDrivers();
+		Enumeration<Driver> driverList = DriverManager.getDrivers();
 		while (driverList.hasMoreElements()) {
 			Driver driverClass = (Driver) driverList.nextElement();
 			System.out.println(" " + driverClass.getClass().getName());
@@ -49,8 +48,8 @@ public class JDBCPayrollService {
 	// retrieving all the employee records from the table
 	public static void display() {
 		try {
-			Statement statement = (Statement) connection.createStatement();
-			ResultSet result = ((java.sql.Statement) statement).executeQuery("select * from employee_payroll");
+			Statement statement = connection.createStatement();
+			ResultSet result =  statement.executeQuery("select * from employee_payroll");
 			System.out.println(result + " records affected");
 			while (result.next()) {
 				System.out.print("ID->" + result.getInt("ID") + " : ");
@@ -68,10 +67,11 @@ public class JDBCPayrollService {
 	// updating an employee salary using statement
 	public static void updateSalaryWithStatement() {
 		try {
-			Statement statement = (Statement) connection.createStatement();
+			Statement statement = connection.createStatement();
 			String query = "update employee_payroll set Salary=450000 where Name='Sangit'";
-			Integer recordUpdated = ((java.sql.Statement) statement).executeUpdate(query);
+			Integer recordUpdated = statement.executeUpdate(query);
 			System.out.println("records updated: " + recordUpdated);
+			display();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -87,7 +87,7 @@ public class JDBCPayrollService {
 			preparedstatement.setString(2, "amit");
 			Integer recordUpdated = preparedstatement.executeUpdate();
 			System.out.println("records updated: " + recordUpdated);
-
+			display();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -96,7 +96,7 @@ public class JDBCPayrollService {
 	// to retrieve all employees who have joined within particular date range
 	public static void displayRecordsWithinGivenDateRange() {
 		try {
-			Statement statement = (Statement) connection.createStatement();
+			Statement statement = connection.createStatement();
 			String query = "select * from employee_payroll where StartDate between '2022-08-19' and DATE(now())";
 			ResultSet result = ((java.sql.Statement) statement).executeQuery(query);
 			System.out.println(result + " records affected");
@@ -116,9 +116,8 @@ public class JDBCPayrollService {
 	// to find sum, max, min, avg, count of male and female employees
 	public static void performAggregateFunctions() {
 		try {
-			Statement statement = (Statement) connection.createStatement();
-			ResultSet result = ((java.sql.Statement) statement)
-					.executeQuery("SELECT SUM(Salary), gender FROM employee_payroll GROUP BY gender;");
+			Statement statement = connection.createStatement();
+			ResultSet result = statement.executeQuery("SELECT SUM(Salary), gender FROM employee_payroll GROUP BY gender;");
 			System.out.println("\n" + result + " records affected.");
 			System.out.println("\n:: Sum ::");
 			while (result.next()) {
@@ -126,7 +125,7 @@ public class JDBCPayrollService {
 				System.out.print("Gender->" + result.getString("Gender") + "\n");
 			}
 
-			result = ((java.sql.Statement) statement).executeQuery("SELECT MIN(Salary), gender FROM employee_payroll GROUP BY gender;");
+			result = statement.executeQuery("SELECT MIN(Salary), gender FROM employee_payroll GROUP BY gender;");
 			System.out.println("\n" + result + " records affected.");
 			System.out.println("\n:: Minimum ::");
 			while (result.next()) {
@@ -134,7 +133,7 @@ public class JDBCPayrollService {
 				System.out.print("Gender->" + result.getString("Gender") + "\n");
 			}
 
-			result = ((java.sql.Statement) statement).executeQuery("SELECT MAX(Salary), gender FROM employee_payroll GROUP BY gender;");
+			result = statement.executeQuery("SELECT MAX(Salary), gender FROM employee_payroll GROUP BY gender;");
 			System.out.println("\n" + result + " records affected.");
 			System.out.println("\n:: Maximum ::");
 			while (result.next()) {
@@ -142,7 +141,7 @@ public class JDBCPayrollService {
 				System.out.print("Gender->" + result.getString("Gender") + "\n");
 			}
 
-			result = ((java.sql.Statement) statement).executeQuery("SELECT AVG(Salary), gender FROM employee_payroll GROUP BY gender;");
+			result = statement.executeQuery("SELECT AVG(Salary), gender FROM employee_payroll GROUP BY gender;");
 			System.out.println("\n" + result + " records affected.");
 			System.out.println("\n:: Average ::");
 			while (result.next()) {
@@ -182,6 +181,23 @@ public class JDBCPayrollService {
 			e.printStackTrace();
 		}
 	}
+	
+	public static void insertEmployeeIntoTable() {
+		try {
+			String query = "insert into employee_payroll values(?, ?, ?, ?, ?)";
+			PreparedStatement preparedStatement = connection.prepareStatement(query);
+			preparedStatement.setInt(1, 8);
+			preparedStatement.setString(2, "Saanvi");
+			preparedStatement.setString(3, "F");
+			preparedStatement.setFloat(4, (float) 45000.00);
+			preparedStatement.setDate(5, java.sql.Date.valueOf("2021-02-09"));
+			Integer result = preparedStatement.executeUpdate();
+			System.out.println(result + " records affected");
+			display();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
 
 	// closing the connection
 	public static void closeConnection() {
@@ -198,12 +214,11 @@ public class JDBCPayrollService {
 		connectingDatabase();
 		display();
 		updateSalaryWithStatement();
-		display();
 		updateSalaryWithPreparedStatement();
-		display();
 		displayRecordsWithinGivenDateRange();
 		performAggregateFunctions();
 		retrievePayrollDataByName();
+		insertEmployeeIntoTable();
 		closeConnection();
 	}
 }
